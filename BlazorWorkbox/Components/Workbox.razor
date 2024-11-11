@@ -17,9 +17,9 @@
             <RadzenDropDown @bind-Value=@WorkflowStateValue Data=@StateData Name="WorkflowState" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowStateChanged />
 
             <RadzenLabel Text="Action: " Component="Action" class="dropdown-label" />
-            <RadzenDropDown @bind-Value=@CommandValue Data=@CommandData Name="Action" ValueProperty="Key" TextProperty="Value" Placeholder="Select action" />
+            <RadzenDropDown @ref="@CommandsDropDown" @bind-Value=@CommandValue Data=@CommandData Name="Action" ValueProperty="Key" TextProperty="Value" Placeholder="Select action" Change="@OnWorkflowCommandChanged" />
 
-            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@LoadWorkboxData" id="refresh-button" Disabled="@ShowOnlySelectedItems" />
+            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@LoadWorkboxData" id="refresh-button" />
         </RadzenColumn>
     </RadzenRow>
 
@@ -33,7 +33,16 @@
                     <RadzenCheckBox TriState="false" TValue="bool" Value="@(SelectedItems.Any() && Items.All(i => SelectedItems.Any(x=> x.ItemUri == i.ItemUri)))" Change="@OnSelectAllItemsChanged" />
                 </HeaderTemplate>
                 <Template Context="item">
-                    <RadzenCheckBox TriState="false" TValue="bool" Value="@(SelectedItems.Any(x => x.ItemUri == item.ItemUri))" Change="@(async selected => await OnSelectItemChanged(selected, item))" />
+                    @if (item.IsUpToDate)
+                    {
+                        <RadzenCheckBox TriState="false" TValue="bool" Value="@(SelectedItems.Any(x => x.ItemUri == item.ItemUri))" Change="@(async selected => await OnSelectItemChanged(selected, item))" />
+                    }
+                    else
+                    {
+                        <span title="Item is beeing refreshed in the search Index.">
+                            <RadzenIcon Icon="history" />
+                        </span>
+                    }
                 </Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%">

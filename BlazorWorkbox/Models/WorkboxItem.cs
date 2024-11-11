@@ -11,5 +11,6 @@
         public DateTime Updated { get; set; }
         public Guid WorkflowStateId { get; set; }
         public string ItemUri { get; set; }
+        public bool IsUpToDate { get; set; }
     }
 }

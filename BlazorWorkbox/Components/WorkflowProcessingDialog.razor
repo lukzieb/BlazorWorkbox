@@ -1,0 +1,55 @@
+﻿@using BlazorWorkbox.Models
+@using Radzen
+@using Radzen.Blazor
+
+<div id="workflow-processing-dialog">
+    @if (Items.Any())
+    {
+        <RadzenDataGrid Data="@Items" IsLoading="@IsLoading" AllowPaging="true" PageSizeOptions="PageSizeOptions" PageSize="10" ShowPagingSummary="true">
+            <Columns>
+                <RadzenDataGridColumn Width="50%" Property="@nameof(WorkboxItem.Path)" Title="Path" />
+                <RadzenDataGridColumn Width="80px" Property="@nameof(WorkboxItem.Language)" Title="Language" />
+                <RadzenDataGridColumn Width="60px" Property="@nameof(WorkboxItem.Version)" Title="Version" />
+                <RadzenDataGridColumn Width="150px" Property="@nameof(WorkboxItem.TemplateName)" Title="Template Name" />
+                <RadzenDataGridColumn Width="150px" Property="@nameof(WorkboxItem.Updated)" Title="Updated" />
+                <RadzenDataGridColumn Width="110px" Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" />
+                <RadzenDataGridColumn Width="60px" Title="Result">
+                    <Template Context="data">
+                        @if (CommandExecutionResults.TryGetValue(data.ItemUri, out var result))
+                        {
+                            <span title="@(result.Successful? "OK" : result.ErrorMessage)">
+                                <RadzenIcon Icon="@(result.Successful ? "check" : "error")" />
+                            </span>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+        @if (ShowSubmit)
+        {
+            <RadzenRow>
+                <RadzenColumn Size="12" class="rz-p-5">
+                    <RadzenTemplateForm Submit="OnSubmit" TItem="WorkflowProcessingDialog" Data="this">
+                        <RadzenLabel Component="Comments">Worflow comments:</RadzenLabel>
+                        <RadzenTextBox @bind-Value="Comments" Name="Comments" Placeholder="Enter Workflow comments" />
+                        <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Secondary" Text="Process" />
+                        <RadzenButton Text="Cancel" Click=@OnCancel ButtonStyle="ButtonStyle.Secondary" />
+                    </RadzenTemplateForm>
+                </RadzenColumn>
+            </RadzenRow>
+        }
+        else
+        {
+            <RadzenColumn Size="12" class="rz-p-5">
+                <RadzenButton Text="Close" Click=@OnDone ButtonStyle="ButtonStyle.Secondary" />
+            </RadzenColumn>
+        }
+    }
+    else
+    {
+        <RadzenColumn Size="12" class="rz-p-5">
+            <RadzenText TagName="TagName.H3">No items selected.</RadzenText>
+            <RadzenButton Text="Close" Click=@OnCancel ButtonStyle="ButtonStyle.Secondary" />
+        </RadzenColumn>
+    }
+</div>

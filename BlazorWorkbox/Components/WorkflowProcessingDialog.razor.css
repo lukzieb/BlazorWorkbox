@@ -1,0 +1,8 @@
+﻿::deep #Comments {
+    width: 300px;
+    margin: 15px 0
+}
+
+::deep .rz-button {
+    margin-right: 10px
+}

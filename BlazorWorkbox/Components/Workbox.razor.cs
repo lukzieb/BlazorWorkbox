@@ -18,6 +18,9 @@ namespace BlazorWorkbox.Components
         [Inject]
         private IOptions<AppSettings> AppSettings { get; set; }
 
+        [Inject]
+        private DialogService DialogService { get; set; }
+
         private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
 
         private IList<WorkboxItem> SelectedItems = new List<WorkboxItem>();
@@ -62,6 +65,8 @@ namespace BlazorWorkbox.Components
         private IEnumerable<FacetItem> Languages = Enumerable.Empty<FacetItem>();
 
         private RadzenPager Pager;
+        RadzenDropDown<Guid> CommandsDropDown;
+
         private bool IsLoading = true;
         protected override async Task OnInitializedAsync()
         {
@@ -70,7 +75,6 @@ namespace BlazorWorkbox.Components
             await LoadWorkflows();
             await LoadWorkboxData();
         }
-
 
         private async Task LoadWorkflows()
         {
@@ -124,6 +128,38 @@ namespace BlazorWorkbox.Components
             }
 
             RecalculateSelectedItems();
+        }
+
+        private async Task OnWorkflowCommandChanged(object value)
+        {
+            string commandDisplayName = CommandData.FirstOrDefault(x => x.Key == (Guid)value).Value;
+
+            IEnumerable<WorkboxItem> itemsProcessed = await DialogService.OpenAsync<WorkflowProcessingDialog>(
+               $"Execute Workflow Command: {commandDisplayName}",
+               new Dictionary<string, object>
+               {
+                    { nameof(WorkflowProcessingDialog.Items), SelectedItems.Where(x => x.WorkflowStateId == WorkflowStateValue).OrderBy(x => x.Path).ToList() },
+                    { nameof(WorkflowProcessingDialog.WorkflowStateId), WorkflowStateValue },
+                    { nameof(WorkflowProcessingDialog.CommandId), (Guid)value }
+               },
+               new DialogOptions { Width = "100%", Draggable = true, Resizable = true, ShowClose = false });
+
+            if (itemsProcessed.Any())
+            {
+                SelectedItems = SelectedItems.Where(x => !itemsProcessed.Any(y => y.ItemUri == x.ItemUri)).ToList();
+                RecalculateSelectedItems();
+
+                if (ShowOnlySelectedItems)
+                {
+                    Items = SelectedItems.Where(x => x.WorkflowStateId == WorkflowStateValue).ToList();
+                }
+                else
+                {
+                    await Pager.FirstPage(true);
+                }
+            }
+
+            await CommandsDropDown.SelectItem(null, false);
         }
 
         private async Task OnShowSelectedItemsChanged(bool selected)
@@ -246,7 +282,8 @@ namespace BlazorWorkbox.Components
                 Version = x.Version,
                 TemplateName = x.TemplateName,
                 WorkflowStateId = x.InnerItem.Workflow.WorkflowState.StateId,
-                ItemUri = x.Uri
+                ItemUri = x.Uri,
+                IsUpToDate = x.InnerItem.Workflow.WorkflowState.StateId == WorkflowStateValue
             });
 
             TemplateNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_templatename")?.Facets.OrderBy(x => x.Name);
