@@ -1,0 +1,44 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.Extensions.Options
+@using BlazorWorkbox.Models
+
+<link type="text/css" rel="stylesheet" href="@AppSettings.Value.ContentManagementInstanceBaseUrl/sitecore/shell/themes/standard/default/Default.css" />
+<link type="text/css" rel="stylesheet" href="@AppSettings.Value.ContentManagementInstanceBaseUrl/sitecore/shell/Themes/Standard/Default/GlobalHeader.css" />
+
+<div id="globalHeader" class="sc-globalHeader">
+    <div class="sc-globalHeader-content">
+        <div class="col2">
+            <div class="sc-globalHeader-startButton">
+                <a href="@AppSettings.Value.ContentManagementInstanceBaseUrl/sitecore/shell/sitecore/client/Applications/Launchpad" id="globalLogo" class="sc-global-logo">&nbsp;</a>
+            </div>
+        </div>
+        <div class="col2">
+            <div class="sc-globalHeader-loginInfo">
+                <AuthorizeView>
+                    <Authorized>
+                        <ul class="sc-accountInformation">
+                            <li><span class="logout" onclick="@BeginLogOut">Log out</span></li>
+                            <li>
+                                <span id="globalHeaderUserName">@context.User.Identity?.Name?.Split('\\').ElementAtOrDefault(1)</span>
+                            </li>
+                        </ul>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject]
+    private NavigationManager Navigation { get; set; }
+
+    [Inject]
+    private IOptions<AppSettings> AppSettings { get; set; }
+
+    public void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+}

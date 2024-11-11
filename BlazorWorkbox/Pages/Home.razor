@@ -1,0 +1,8 @@
+﻿@using Microsoft.AspNetCore.Authorization
+
+@page "/"
+@attribute [Authorize(Roles = "sitecore\\Author, Admin")]
+
+<PageTitle>Blazor Workbox</PageTitle>
+
+<h1>Welcome to Blazor Workbox homepage!</h1>
