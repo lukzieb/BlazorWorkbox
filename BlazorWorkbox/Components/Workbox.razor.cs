@@ -4,6 +4,7 @@ using BlazorWorkbox.Models;
 using GraphQL;
 using GraphQL.Client.Abstractions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Options;
 using Radzen;
 using Radzen.Blazor;
 
@@ -14,7 +15,8 @@ namespace BlazorWorkbox.Components
         [Inject]
         private IGraphQLClient GraphQLClient { get; set; }
 
-        private Guid WorkflowStateValue = Guid.Parse("190b1c84f1be47edaa41f42193d9c8fc");
+        [Inject]
+        private IOptions<AppSettings> AppSettings { get; set; }
 
         private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
 
@@ -33,6 +35,17 @@ namespace BlazorWorkbox.Components
         private DateTime? UpdatedFrom;
         private DateTime? UpdatedTo;
 
+        private Guid WorkflowValue;
+        private Guid WorkflowStateValue;
+        private Guid CommandValue;
+
+        private IEnumerable<KeyValuePair<Guid, string>> CommandData;
+        private IEnumerable<KeyValuePair<Guid, string>> StateData;
+        private IEnumerable<KeyValuePair<Guid, string>> WorkflowsData;
+
+        Dictionary<Guid, IEnumerable<KeyValuePair<Guid, string>>> CommandsForState = new();
+        Dictionary<Guid, IEnumerable<KeyValuePair<Guid, string>>> StatesForWorkflow = new();
+
         private readonly Dictionary<string, object> FilterValues = new();
 
         private string SortBy = nameof(WorkboxItem.Updated);
@@ -45,14 +58,57 @@ namespace BlazorWorkbox.Components
 
         private RadzenPager Pager;
         private bool IsLoading = true;
-
-
         protected override async Task OnInitializedAsync()
         {
-            this.PageSize = 10;
+            PageSize = 10;
 
+            await LoadWorkflows();
             await LoadWorkboxData();
         }
+
+
+        private async Task LoadWorkflows()
+        {
+            IEnumerable<Task<GraphQLResponse<WorkflowStatesResponse>>> stateRequests = AppSettings.Value.Workflows.Select(async x => await GraphQLClient.SendQueryAsync<WorkflowStatesResponse>(WorkflowStatesRequests.Create(x)));
+
+            GraphQLResponse<WorkflowStatesResponse>[] stateResponses = await Task.WhenAll(stateRequests);
+
+            StatesForWorkflow = stateResponses
+                .Select(x => new KeyValuePair<Guid, IEnumerable<KeyValuePair<Guid, string>>>(x.Data.Workflow.WorkflowId, x.Data.Workflow.States.Nodes.Select(s => new KeyValuePair<Guid, string>(s.StateId, s.DisplayName)))).ToDictionary();
+
+            IEnumerable<(Guid WorkflowId, Guid StatedId)> stateAndWorkflows = stateResponses.SelectMany(x => x.Data.Workflow.States.Nodes.Select(z => (x.Data.Workflow.WorkflowId, z.StateId)));
+
+            IEnumerable<Task<(Guid StatedId, GraphQLResponse<WorkflowCommandsResponse>)>> commandsRequests = stateAndWorkflows
+                .Select(async x => (x.StatedId, await GraphQLClient.SendQueryAsync<WorkflowCommandsResponse>(WorkflowCommandsRequest.Create(x.WorkflowId, x.StatedId))));
+
+            (Guid StatedId, GraphQLResponse<WorkflowCommandsResponse> Response)[] commandsRespones = await Task.WhenAll(commandsRequests);
+
+            CommandsForState = commandsRespones
+                .Select(x => new KeyValuePair<Guid, IEnumerable<KeyValuePair<Guid, string>>>(x.StatedId, x.Response.Data.Workflow.Commands.Nodes.Where(y => !y.DisplayName.StartsWith("_")).Select(z => new KeyValuePair<Guid, string>(z.CommandId, z.DisplayName)))).ToDictionary();
+
+            WorkflowsData = stateResponses.Select(x => new KeyValuePair<Guid, string>(x.Data.Workflow.WorkflowId, x.Data.Workflow.DisplayName));
+            WorkflowValue = WorkflowsData.FirstOrDefault().Key;
+            StateData = StatesForWorkflow[WorkflowValue];
+            WorkflowStateValue = StateData.FirstOrDefault().Key;
+
+            CommandData = CommandsForState[WorkflowStateValue];
+        }
+
+        private async Task OnWorkflowValueChanged(object value)
+        {
+            StateData = StatesForWorkflow[(Guid)value];
+            WorkflowStateValue = StateData.FirstOrDefault().Key;
+
+            await OnWorkflowStateChanged(WorkflowStateValue);
+        }
+
+        private async Task OnWorkflowStateChanged(object value)
+        {
+            CommandData = CommandsForState[(Guid)value];
+
+            await Pager.FirstPage(true);
+        }
+
 
         private async Task OnPageChanged(PagerEventArgs args)
         {

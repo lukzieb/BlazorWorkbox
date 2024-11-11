@@ -3,6 +3,24 @@
 @using Radzen.Blazor
 
 <div id="workbox">
+    <RadzenRow>
+        <RadzenColumn Size="4" class="rz-p-4" id="selected-items">
+        </RadzenColumn>
+        <RadzenColumn Size="8" class="rz-text-align-right rz-p-5">
+
+            <RadzenLabel Text="Workflow: " Component="Workflow" class="dropdown-label" />
+            <RadzenDropDown @bind-Value=@WorkflowValue Data=@WorkflowsData Name="Workflow" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowValueChanged />
+
+            <RadzenLabel Text="State: " Component="WorkflowState" class="dropdown-label" />
+            <RadzenDropDown @bind-Value=@WorkflowStateValue Data=@StateData Name="WorkflowState" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowStateChanged />
+
+            <RadzenLabel Text="Action: " Component="Action" class="dropdown-label" />
+            <RadzenDropDown @bind-Value=@CommandValue Data=@CommandData Name="Action" ValueProperty="Key" TextProperty="Value" Placeholder="Select action" />
+
+            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@LoadWorkboxData" id="refresh-button" />
+        </RadzenColumn>
+    </RadzenRow>
+
     <RadzenDataGrid Data="@Items" TItem="WorkboxItem" IsLoading="@IsLoading"
                             AllowSorting Sort="@OnSort"
                             AllowFiltering FilterMode="FilterMode.Simple" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">

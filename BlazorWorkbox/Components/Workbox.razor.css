@@ -5,3 +5,15 @@
 ::deep .rz-datepicker .rz-inputtext {
     width: 40px;
 }
+
+::deep .dropdown-label {
+    font-size: 1rem;
+    top: -5px;
+    position: relative;
+    margin-left: 20px;
+}
+
+::deep #refresh-button {
+    top: -4px;
+    margin-left: 10px;
+}

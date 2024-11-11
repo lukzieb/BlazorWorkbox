@@ -4,6 +4,6 @@
     {
         public string IdentityAuthorityBaseUrl { get; set; }
         public string ContentManagementInstanceBaseUrl { get; set; }
-
+        public Guid[] Workflows { get; set; }
     }
 }

@@ -37,7 +37,7 @@ builder.Services.AddHttpClient<IGraphQLClient, GraphQLHttpClient>(x =>
         EndPoint = new Uri($"{appSettings.ContentManagementInstanceBaseUrl}/sitecore/api/authoring/graphql/v1")
     };
 
-    return new GraphQLHttpClient(graphQLHttpClientOptions, new SystemTextJsonSerializer(), x);
+    return new GraphQLHttpClient(graphQLHttpClientOptions, new SystemTextJsonSerializer(x => x.Converters.Add(new GuidJsonConverter())), x);
 
 }).AddHttpMessageHandler<SitecoreAuthorizationMessageHandler>();
 
