@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorWorkbox;
 using BlazorWorkbox.Models;
+using GraphQL.Client.Abstractions;
+using GraphQL.Client.Http;
+using GraphQL.Client.Serializer.SystemTextJson;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -26,5 +29,18 @@ builder.Services.AddOidcAuthentication(options =>
 builder.Services.AddScoped(typeof(AccountClaimsPrincipalFactory<RemoteUserAccount>), typeof(SitecoreAccountClaimsPrincipalFactory));
 
 builder.Services.Configure<AppSettings>(x => builder.Configuration.GetSection("AppSettings").Bind(x));
+
+builder.Services.AddHttpClient<IGraphQLClient, GraphQLHttpClient>(x =>
+{
+    GraphQLHttpClientOptions graphQLHttpClientOptions = new GraphQLHttpClientOptions()
+    {
+        EndPoint = new Uri($"{appSettings.ContentManagementInstanceBaseUrl}/sitecore/api/authoring/graphql/v1")
+    };
+
+    return new GraphQLHttpClient(graphQLHttpClientOptions, new SystemTextJsonSerializer(), x);
+
+}).AddHttpMessageHandler<SitecoreAuthorizationMessageHandler>();
+
+builder.Services.AddTransient<SitecoreAuthorizationMessageHandler>();
 
 await builder.Build().RunAsync();

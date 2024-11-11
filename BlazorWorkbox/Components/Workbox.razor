@@ -1,0 +1,19 @@
+﻿@using BlazorWorkbox.Models
+@using Radzen.Blazor
+
+<div id="workbox">
+     <RadzenDataGrid Data="@Items"> 
+            <Columns>
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Name)" Title="Name" Width="15%" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Language)" Title="Language" Width="110px" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Version)" Title="Version" Width="80px" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.TemplateName)" Title="Template Name" Width="200px" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Updated)" Title="Updated" Width="160px" />
+                <RadzenDataGridColumn Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" Width="120px" />
+            </Columns>
+    </RadzenDataGrid>
+
+    <RadzenPager Count="@TotalRecordCount" PageSize="@PageSize" PageSizeOptions="@PageSizeOptions" ShowPagingSummary="true" PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
+                 PageChanged="@OnPageChanged" PageSizeChanged="@OnPageSizeChanged" />
+    </div>
