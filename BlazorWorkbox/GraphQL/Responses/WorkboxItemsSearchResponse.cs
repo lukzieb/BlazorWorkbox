@@ -6,7 +6,8 @@
 
     public record Search(
         int TotalCount,
-        IEnumerable<SearchResults> Results
+        IEnumerable<SearchResults> Results,
+        IEnumerable<Facet> Facets
         );
 
     public record SearchResults(
@@ -23,4 +24,13 @@
     public record Language(
         string Name
         );
+
+    public record Facet(
+        string Name,
+        IEnumerable<FacetItem> Facets
+    );
+
+    public record FacetItem(
+        string Name
+    );
 }

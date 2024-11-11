@@ -3,3 +3,7 @@
     top: 80px;
     margin: 0 20px;
 }
+
+::deep .rz-data-grid:has(.rz-datatable-loading) .rz-grid-table {
+    opacity: 0.4;
+}

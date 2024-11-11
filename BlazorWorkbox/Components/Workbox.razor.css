@@ -1,0 +1,7 @@
+﻿::deep .datepicker-label {
+    margin: 0 10px;
+}
+
+::deep .rz-datepicker .rz-inputtext {
+    width: 40px;
+}

@@ -1,19 +1,55 @@
 ﻿@using BlazorWorkbox.Models
+@using Radzen
 @using Radzen.Blazor
 
 <div id="workbox">
-     <RadzenDataGrid Data="@Items"> 
-            <Columns>
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Name)" Title="Name" Width="15%" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Language)" Title="Language" Width="110px" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Version)" Title="Version" Width="80px" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.TemplateName)" Title="Template Name" Width="200px" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.Updated)" Title="Updated" Width="160px" />
-                <RadzenDataGridColumn Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" Width="120px" />
-            </Columns>
-    </RadzenDataGrid>
+    <RadzenDataGrid Data="@Items" TItem="WorkboxItem" IsLoading="@IsLoading"
+                            AllowSorting Sort="@OnSort"
+                            AllowFiltering FilterMode="FilterMode.Simple" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
 
-    <RadzenPager Count="@TotalRecordCount" PageSize="@PageSize" PageSizeOptions="@PageSizeOptions" ShowPagingSummary="true" PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
-                 PageChanged="@OnPageChanged" PageSizeChanged="@OnPageSizeChanged" />
-    </div>
+         <Columns>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%">
+                 <FilterTemplate>
+                     <RadzenTextBox @bind-Value=@Path Change="OnFilterChanged" />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Name)" Title="Name" Width="15%" Filterable="false" Sortable="false">
+                 <FilterTemplate>
+                     <RadzenTextBox @bind-Value=@Name Change="OnFilterChanged" />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Language)" Title="Language" Width="110px">
+                 <FilterTemplate>
+                     <RadzenDropDown @bind-Value=@Language Data=@Languages TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Version)" Title="Version" Width="90px">
+                 <FilterTemplate>
+                     <RadzenTextBox @bind-Value=@Version Change="OnFilterChanged" />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.TemplateName)" Title="Template Name" Width="190px">
+                 <FilterTemplate>
+                     <RadzenDropDown @bind-Value=@TemplateName Data=@TemplateNames TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Updated)" Title="Updated" Width="210px" SortOrder="DefaultSortOrder">
+                 <FilterTemplate>
+                     <RadzenLabel Component="from" Text="From" class="datepicker-label" />
+                     <RadzenDatePicker title="@UpdatedFrom" Name="from" @bind-Value=@UpdatedFrom Change="OnFilterChanged" AllowClear />
+                     <RadzenLabel Component="to" Text="To" class="datepicker-label" />
+                     <RadzenDatePicker title="@UpdatedTo" Name="to" @bind-Value=@UpdatedTo Change="OnFilterChanged" AllowClear />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+             <RadzenDataGridColumn Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" Width="160px">
+                 <FilterTemplate>
+                     <RadzenDropDown @bind-Value=@UpdatedBy Data=@UpdatedByNames TextProperty="Value" ValueProperty="Key" Change=@OnFilterChanged AllowClear />
+                 </FilterTemplate>
+             </RadzenDataGridColumn>
+         </Columns>
+     </RadzenDataGrid>
+
+     <RadzenPager @ref=Pager Count="@TotalRecordCount" PageSize="@PageSize" PageSizeOptions="@PageSizeOptions"
+                      ShowPagingSummary PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
+                  PageChanged="@OnPageChanged" PageSizeChanged="@OnPageSizeChanged" />
+ </div>
