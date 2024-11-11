@@ -54,6 +54,14 @@ namespace BlazorWorkbox.GraphQL.Requests
                }
                version
                templateName
+               uri
+               innerItem {
+                 workflow {
+                   workflowState {
+                     stateId
+                   }
+                 }
+               }
              }
            facets{
              name

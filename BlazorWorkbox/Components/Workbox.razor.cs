@@ -20,6 +20,11 @@ namespace BlazorWorkbox.Components
 
         private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
 
+        private IList<WorkboxItem> SelectedItems = new List<WorkboxItem>();
+        private int SelectedItemsCount;
+        public bool ShowOnlySelectedItems;
+        private string StateDisplayName;
+
         private int TotalRecordCount;
         private readonly IEnumerable<int> PageSizeOptions = new int[] { 10, 25, 50 };
 
@@ -92,6 +97,8 @@ namespace BlazorWorkbox.Components
             WorkflowStateValue = StateData.FirstOrDefault().Key;
 
             CommandData = CommandsForState[WorkflowStateValue];
+
+            StateDisplayName = StateData.FirstOrDefault().Value;
         }
 
         private async Task OnWorkflowValueChanged(object value)
@@ -105,10 +112,67 @@ namespace BlazorWorkbox.Components
         private async Task OnWorkflowStateChanged(object value)
         {
             CommandData = CommandsForState[(Guid)value];
+            StateDisplayName = StateData.FirstOrDefault(x => x.Key == (Guid)value).Value;
 
-            await Pager.FirstPage(true);
+            if (ShowOnlySelectedItems)
+            {
+                Items = SelectedItems.Where(x => x.WorkflowStateId == WorkflowStateValue).ToList();
+            }
+            else
+            {
+                await Pager.FirstPage(true);
+            }
+
+            RecalculateSelectedItems();
         }
 
+        private async Task OnShowSelectedItemsChanged(bool selected)
+        {
+            ShowOnlySelectedItems = selected;
+
+            if (ShowOnlySelectedItems)
+            {
+                Items = SelectedItems.Where(x => x.WorkflowStateId == WorkflowStateValue).ToList();
+                TotalRecordCount = SelectedItemsCount;
+            }
+            else
+            {
+                await Pager.FirstPage(true);
+            }
+        }
+
+        private async Task OnSelectAllItemsChanged(bool selected)
+        {
+            if (selected)
+            {
+                SelectedItems = Items.UnionBy(SelectedItems, x => x.ItemUri).ToList();
+            }
+            else
+            {
+                SelectedItems = SelectedItems.Where(x => !Items.Any(y => x.ItemUri == y.ItemUri)).ToList();
+            }
+
+            RecalculateSelectedItems();
+        }
+
+        private async Task OnSelectItemChanged(bool selected, WorkboxItem item)
+        {
+            if (selected)
+            {
+                SelectedItems.Add(item);
+            }
+            else
+            {
+                SelectedItems = SelectedItems.Where(x => x.ItemUri != item.ItemUri).ToList();
+            }
+
+            RecalculateSelectedItems();
+        }
+
+        private void RecalculateSelectedItems()
+        {
+            SelectedItemsCount = SelectedItems.Where(x => x.WorkflowStateId == WorkflowStateValue).Count();
+        }
 
         private async Task OnPageChanged(PagerEventArgs args)
         {
@@ -158,14 +222,13 @@ namespace BlazorWorkbox.Components
             FilterValues[nameof(UpdatedTo)] = UpdatedTo;
         }
 
-
         private async Task LoadWorkboxData()
         {
             IsLoading = true;
             UpdateFilters();
 
             GraphQLRequest request = WorkboxItemsSearchRequest.Create(WorkflowStateValue, PageSize, PageIndex, FilterValues, SortBy, SortOrder);
-              GraphQLResponse<WorkboxItemsSearchResponse> result = await GraphQLClient.SendQueryAsync<WorkboxItemsSearchResponse>(request);
+            GraphQLResponse<WorkboxItemsSearchResponse> result = await GraphQLClient.SendQueryAsync<WorkboxItemsSearchResponse>(request);
 
             if (result.Data == null)
             {
@@ -181,7 +244,9 @@ namespace BlazorWorkbox.Components
                 UpdatedBy = x.UpdatedBy.Replace("sitecore", "sitecore/"),
                 Language = x.Language.Name,
                 Version = x.Version,
-                TemplateName = x.TemplateName
+                TemplateName = x.TemplateName,
+                WorkflowStateId = x.InnerItem.Workflow.WorkflowState.StateId,
+                ItemUri = x.Uri
             });
 
             TemplateNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_templatename")?.Facets.OrderBy(x => x.Name);

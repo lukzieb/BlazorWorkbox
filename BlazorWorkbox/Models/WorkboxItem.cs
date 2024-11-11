@@ -9,5 +9,7 @@
         public string TemplateName { get; set; }
         public string UpdatedBy { get; set; }
         public DateTime Updated { get; set; }
+        public Guid WorkflowStateId { get; set; }
+        public string ItemUri { get; set; }
     }
 }

@@ -17,3 +17,11 @@
     top: -4px;
     margin-left: 10px;
 }
+
+::deep #selected-items {
+    margin-top: 15px;
+}
+
+::deep #selected-items .rz-chkbox {
+    margin-right: 10px;
+}

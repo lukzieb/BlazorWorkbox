@@ -18,8 +18,22 @@
         string UpdatedBy,
         Language Language,
         int Version,
-        string TemplateName
+        string TemplateName,
+        InnerItem InnerItem,
+        string Uri
         );
+
+    public record InnerItem(
+         Workflow Workflow
+    );
+
+    public record Workflow(
+        WorkflowState WorkflowState
+    );
+
+    public record WorkflowState(
+        Guid StateId
+    );
 
     public record Language(
         string Name
