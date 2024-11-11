@@ -1,4 +1,5 @@
-﻿using BlazorWorkbox.GraphQL.Requests;
+﻿using Blazored.LocalStorage;
+using BlazorWorkbox.GraphQL.Requests;
 using BlazorWorkbox.GraphQL.Responses;
 using BlazorWorkbox.Models;
 using GraphQL;
@@ -12,6 +13,8 @@ namespace BlazorWorkbox.Components
 {
     public partial class Workbox : ComponentBase
     {
+        private const string SelectedItemsLocalStorageKey = "selectedItems";
+
         [Inject]
         private IGraphQLClient GraphQLClient { get; set; }
 
@@ -21,6 +24,12 @@ namespace BlazorWorkbox.Components
         [Inject]
         private DialogService DialogService { get; set; }
 
+        [Inject]
+        private NavigationManager NavigationManager { get; set; }
+
+        [Inject]
+        private ILocalStorageService LocalStorgeService { get; set; }
+
         private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
 
         private IList<WorkboxItem> SelectedItems = new List<WorkboxItem>();
@@ -29,22 +38,43 @@ namespace BlazorWorkbox.Components
         private string StateDisplayName;
 
         private int TotalRecordCount;
-        private readonly IEnumerable<int> PageSizeOptions = new int[] { 10, 25, 50 };
+        private readonly IEnumerable<int> PageSizeOptions = new int[] { 1, 25, 50 };
 
-        private int PageIndex;
-        private int PageSize;
+        [SupplyParameterFromQuery]
+        private int PageIndex { get; set; }
 
-        private string Path;
+        [SupplyParameterFromQuery]
+        public int PageSize { get; set; }
+
+        [SupplyParameterFromQuery]
+        private string Path { get; set; }
+
         private string Name;
-        private string Language;
-        private string Version;
-        private string TemplateName;
-        private string UpdatedBy;
-        private DateTime? UpdatedFrom;
-        private DateTime? UpdatedTo;
 
-        private Guid WorkflowValue;
-        private Guid WorkflowStateValue;
+        [SupplyParameterFromQuery]
+        private string Language { get; set; }
+
+        [SupplyParameterFromQuery]
+        private string Version { get; set; }
+
+        [SupplyParameterFromQuery]
+        private string TemplateName { get; set; }
+
+        [SupplyParameterFromQuery]
+        private string UpdatedBy { get; set; }
+
+        [SupplyParameterFromQuery]
+        private DateTime? UpdatedFrom { get; set; }
+
+        [SupplyParameterFromQuery]
+        private DateTime? UpdatedTo { get; set; }
+
+        [SupplyParameterFromQuery]
+        private Guid WorkflowValue { get; set; }
+
+        [SupplyParameterFromQuery]
+        private Guid WorkflowStateValue { get; set; }
+
         private Guid CommandValue;
 
         private IEnumerable<KeyValuePair<Guid, string>> CommandData;
@@ -74,6 +104,8 @@ namespace BlazorWorkbox.Components
 
             await LoadWorkflows();
             await LoadWorkboxData();
+
+            await LoadStateAsync();
         }
 
         private async Task LoadWorkflows()
@@ -96,13 +128,14 @@ namespace BlazorWorkbox.Components
                 .Select(x => new KeyValuePair<Guid, IEnumerable<KeyValuePair<Guid, string>>>(x.StatedId, x.Response.Data.Workflow.Commands.Nodes.Where(y => !y.DisplayName.StartsWith("_")).Select(z => new KeyValuePair<Guid, string>(z.CommandId, z.DisplayName)))).ToDictionary();
 
             WorkflowsData = stateResponses.Select(x => new KeyValuePair<Guid, string>(x.Data.Workflow.WorkflowId, x.Data.Workflow.DisplayName));
-            WorkflowValue = WorkflowsData.FirstOrDefault().Key;
+            WorkflowValue = WorkflowsData.Any(x => x.Key == WorkflowValue) ? WorkflowValue : WorkflowsData.FirstOrDefault().Key;
             StateData = StatesForWorkflow[WorkflowValue];
-            WorkflowStateValue = StateData.FirstOrDefault().Key;
+            WorkflowStateValue = StateData.Any(x => x.Key == WorkflowStateValue) ? WorkflowStateValue : StateData.FirstOrDefault().Key;
 
             CommandData = CommandsForState[WorkflowStateValue];
 
-            StateDisplayName = StateData.FirstOrDefault().Value;
+            StateDisplayName = StateData.FirstOrDefault(x => x.Key == WorkflowStateValue).Value ?? StateData.FirstOrDefault().Value;
+
         }
 
         private async Task OnWorkflowValueChanged(object value)
@@ -148,6 +181,7 @@ namespace BlazorWorkbox.Components
             {
                 SelectedItems = SelectedItems.Where(x => !itemsProcessed.Any(y => y.ItemUri == x.ItemUri)).ToList();
                 RecalculateSelectedItems();
+                await SaveSelectedItemsAsync();
 
                 if (ShowOnlySelectedItems)
                 {
@@ -189,6 +223,8 @@ namespace BlazorWorkbox.Components
             }
 
             RecalculateSelectedItems();
+
+            await SaveSelectedItemsAsync();
         }
 
         private async Task OnSelectItemChanged(bool selected, WorkboxItem item)
@@ -203,6 +239,8 @@ namespace BlazorWorkbox.Components
             }
 
             RecalculateSelectedItems();
+
+            await SaveSelectedItemsAsync();
         }
 
         private void RecalculateSelectedItems()
@@ -258,10 +296,41 @@ namespace BlazorWorkbox.Components
             FilterValues[nameof(UpdatedTo)] = UpdatedTo;
         }
 
+        private void UpdateUrl()
+        {
+            Dictionary<string, object> queryStrings = new(FilterValues)
+               {
+                   { nameof(PageSize), PageSize },
+                   { nameof(PageIndex), PageIndex },
+                   { nameof(WorkflowValue), WorkflowValue },
+                   { nameof(WorkflowStateValue), WorkflowStateValue}
+               };
+
+            NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(queryStrings));
+        }
+
+        private async Task SaveSelectedItemsAsync()
+        {
+            await LocalStorgeService.SetItemAsync(SelectedItemsLocalStorageKey, SelectedItems);
+        }
+
+        private async Task LoadStateAsync()
+        {
+            IList<WorkboxItem> selectedItemsFromLocalStorage = await LocalStorgeService.GetItemAsync<IList<WorkboxItem>>(SelectedItemsLocalStorageKey);
+
+            if (selectedItemsFromLocalStorage != null)
+            {
+                SelectedItems = selectedItemsFromLocalStorage;
+                RecalculateSelectedItems();
+            }
+        }
+
         private async Task LoadWorkboxData()
         {
             IsLoading = true;
+
             UpdateFilters();
+            UpdateUrl();
 
             GraphQLRequest request = WorkboxItemsSearchRequest.Create(WorkflowStateValue, PageSize, PageIndex, FilterValues, SortBy, SortOrder);
             GraphQLResponse<WorkboxItemsSearchResponse> result = await GraphQLClient.SendQueryAsync<WorkboxItemsSearchResponse>(request);

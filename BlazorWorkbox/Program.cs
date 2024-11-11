@@ -7,6 +7,7 @@ using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 using Radzen;
+using Blazored.LocalStorage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -44,5 +45,6 @@ builder.Services.AddHttpClient<IGraphQLClient, GraphQLHttpClient>(x =>
 
 builder.Services.AddTransient<SitecoreAuthorizationMessageHandler>();
 builder.Services.AddScoped<DialogService>();
+builder.Services.AddBlazoredLocalStorage();
 
 await builder.Build().RunAsync();
