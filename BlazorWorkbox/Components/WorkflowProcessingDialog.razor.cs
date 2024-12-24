@@ -12,11 +12,12 @@ namespace BlazorWorkbox.Components
 {
     public partial class WorkflowProcessingDialog : ComponentBase
     {
-        private bool ShowSubmit = true;
-        private bool IsLoading;
-        private string Comments;
+        private readonly IEnumerable<int> _pageSizeOptions = [10, 25, 50];
+        private readonly Dictionary<string, (bool Successful, string ErrorMessage)> _commandExecutionResults = [];
 
-        private IEnumerable<int> PageSizeOptions = new[] { 10, 30, 50 };
+        private bool _showSubmit = true;
+        private bool _isLoading;
+        private string _comments;
 
         [Parameter]
         public IList<WorkboxItem> Items { get; set; }
@@ -27,8 +28,6 @@ namespace BlazorWorkbox.Components
         [Parameter]
         public Guid WorkflowStateId { get; set; }
 
-        Dictionary<string, (bool Successful, string ErrorMessage)> CommandExecutionResults = new Dictionary<string, (bool Successful, string ErrorMessage)>();
-
         [Inject]
         private DialogService DialogService { get; set; }
 
@@ -38,23 +37,23 @@ namespace BlazorWorkbox.Components
 
         private async Task OnSubmit()
         {
-            IsLoading = true;
+            _isLoading = true;
 
-            foreach (var item in Items)
+            foreach (WorkboxItem item in Items)
             {
-                Uri uri = new Uri(item.ItemUri);
+                Uri uri = new(item.ItemUri);
                 NameValueCollection parameters = HttpUtility.ParseQueryString(uri.Query);
 
-                GraphQLResponse<ExecuteWorkflowCommandResponse> commandResponse = await GraphQLClient.SendQueryAsync<ExecuteWorkflowCommandResponse>(ExecuteWorkflowCommandRequest.Create(CommandId, uri.LocalPath.Trim('/'), int.Parse(parameters["ver"]), parameters["lang"], uri.Host, Comments));
+                GraphQLResponse<ExecuteWorkflowCommandResponse> commandResponse = await GraphQLClient.SendQueryAsync<ExecuteWorkflowCommandResponse>(ExecuteWorkflowCommandRequest.Create(CommandId, uri.LocalPath.Trim('/'), int.Parse(parameters["ver"]), parameters["lang"], uri.Host, _comments));
 
                 ExecuteWorkflowCommand executeWorkflowCommandResult = commandResponse.Data.ExecuteWorkflowCommand;
 
-                CommandExecutionResults.Add(item.ItemUri,
+                _commandExecutionResults.Add(item.ItemUri,
                     new(executeWorkflowCommandResult.Successful, executeWorkflowCommandResult.Error));
             }
 
-            ShowSubmit = false;
-            IsLoading = false;
+            _showSubmit = false;
+            _isLoading = false;
         }
 
         private void OnCancel()
@@ -66,7 +65,7 @@ namespace BlazorWorkbox.Components
         {
             IEnumerable<WorkboxItem> itemsProcessed = Items.Where(x =>
             {
-                if (CommandExecutionResults.TryGetValue(x.ItemUri, out var value))
+                if (_commandExecutionResults.TryGetValue(x.ItemUri, out var value))
                 {
                     return value.Successful;
                 }
