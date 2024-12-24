@@ -6,7 +6,7 @@ namespace BlazorWorkbox.GraphQL.Requests
     public static class WorkflowCommandsRequest
     {
         [StringSyntax("GraphQL")]
-        private static readonly string Query = """
+        private const string Query = """
             query WorkflowCommands($workflowId: String!, $stateId: String!) {
                 workflow(where: { item: { itemId: $workflowId } }) {
                   commands(query: { stateId: $stateId }) {
