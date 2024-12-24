@@ -6,7 +6,7 @@ namespace BlazorWorkbox.GraphQL.Requests
     public static class WorkboxItemsSearchRequest
     {
         [StringSyntax("GraphQL")]
-        private static readonly string Query = """
+        private const string Query = """
             query WorkboxItems($workflowState: String!, $pageSize: Int!, $pageIndex: Int!)  {
               search(
                 query: {

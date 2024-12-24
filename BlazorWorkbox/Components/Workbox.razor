@@ -2,7 +2,7 @@
 @using Radzen.Blazor
 
 <div id="workbox">
-     <RadzenDataGrid Data="@Items"> 
+     <RadzenDataGrid Data="@_items"> 
             <Columns>
                 <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%" />
                 <RadzenDataGridColumn Property="@nameof(WorkboxItem.Name)" Title="Name" Width="15%" />
@@ -14,6 +14,6 @@
             </Columns>
     </RadzenDataGrid>
 
-    <RadzenPager Count="@TotalRecordCount" PageSize="@PageSize" PageSizeOptions="@PageSizeOptions" ShowPagingSummary="true" PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
+    <RadzenPager Count="@_totalRecordCount" PageSize="@_pageSize" PageSizeOptions="@_pageSizeOptions" ShowPagingSummary="true" PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
                  PageChanged="@OnPageChanged" PageSizeChanged="@OnPageSizeChanged" />
     </div>

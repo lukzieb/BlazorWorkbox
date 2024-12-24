@@ -5,49 +5,48 @@ using GraphQL;
 using GraphQL.Client.Abstractions;
 using Microsoft.AspNetCore.Components;
 using Radzen;
-using Radzen.Blazor;
 
 namespace BlazorWorkbox.Components
 {
     public partial class Workbox : ComponentBase
     {
+        private readonly Guid _stateID = Guid.Parse("190b1c84f1be47edaa41f42193d9c8fc");
+        private readonly IEnumerable<int> _pageSizeOptions = [10, 25, 50];
+
+        private IEnumerable<WorkboxItem> _items = [];
+
+        private int _totalRecordCount;
+
+        private int _pageIndex;
+        private int _pageSize;
+
         [Inject]
         private IGraphQLClient GraphQLClient { get; set; }
 
-        private Guid WorkflowStateValue = Guid.Parse("190b1c84f1be47edaa41f42193d9c8fc");
-
-        private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
-
-        private int TotalRecordCount;
-        private readonly IEnumerable<int> PageSizeOptions = new int[] { 10, 25, 50 };
-
-        private int PageIndex;
-        private int PageSize;
-
         protected override async Task OnInitializedAsync()
         {
-            this.PageSize = 10;
+            _pageSize = 10;
 
             await LoadWorkboxData();
         }
 
         private async Task OnPageChanged(PagerEventArgs args)
         {
-            PageIndex = args.PageIndex;
+            _pageIndex = args.PageIndex;
 
             await LoadWorkboxData();
         }
 
         private async Task OnPageSizeChanged(int pageSize)
         {
-            PageSize = pageSize;
+            _pageSize = pageSize;
 
             await LoadWorkboxData();
         }
 
         private async Task LoadWorkboxData()
         {
-            GraphQLRequest request = WorkboxItemsSearchRequest.Create(WorkflowStateValue, PageSize, PageIndex);
+            GraphQLRequest request = WorkboxItemsSearchRequest.Create(_stateID, _pageSize, _pageIndex);
             GraphQLResponse<WorkboxItemsSearchResponse> result = await GraphQLClient.SendQueryAsync<WorkboxItemsSearchResponse>(request);
 
             if (result.Data == null)
@@ -55,8 +54,8 @@ namespace BlazorWorkbox.Components
                 return;
             }
 
-            TotalRecordCount = result.Data.Search.TotalCount;
-            Items = result.Data.Search.Results.Select(x => new WorkboxItem
+            _totalRecordCount = result.Data.Search.TotalCount;
+            _items = result.Data.Search.Results.Select(x => new WorkboxItem
             {
                 Path = x.Path,
                 Name = x.Name,
