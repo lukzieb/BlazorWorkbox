@@ -11,104 +11,100 @@ namespace BlazorWorkbox.Components
 {
     public partial class Workbox : ComponentBase
     {
+        private readonly Guid _stateID = Guid.Parse("190b1c84f1be47edaa41f42193d9c8fc");
+        private readonly IEnumerable<int> _pageSizeOptions = [10, 25, 50];
+        private readonly Dictionary<string, object> _filterValues = [];
+
+        private IEnumerable<WorkboxItem> _items = [];
+
+        private int _totalRecordCount;
+
+        private int _pageIndex;
+        private int _pageSize;
+
+        private string _path;
+        private string _name;
+        private string _language;
+        private string _version;
+        private string _templateName;
+        private string _updatedBy;
+        private DateTime? _updatedFrom;
+        private DateTime? _updatedTo;
+
+        private string _sortBy = nameof(WorkboxItem.Updated);
+        private SortOrder _sortOrder = SortOrder.Descending;
+        private SortOrder? _defaultSortOrder;
+
+        private IEnumerable<FacetItem> _templateNames = [];
+        private IEnumerable<KeyValuePair<string, string>> _updatedByNames = [];
+        private IEnumerable<FacetItem> _languages = [];
+
+        private bool _isLoading = true;
+
+        private RadzenPager _pager;
+
         [Inject]
         private IGraphQLClient GraphQLClient { get; set; }
 
-        private Guid WorkflowStateValue = Guid.Parse("190b1c84f1be47edaa41f42193d9c8fc");
-
-        private IEnumerable<WorkboxItem> Items = new List<WorkboxItem>();
-
-        private int TotalRecordCount;
-        private readonly IEnumerable<int> PageSizeOptions = new int[] { 10, 25, 50 };
-
-        private int PageIndex;
-        private int PageSize;
-
-        private string Path;
-        private string Name;
-        private string Language;
-        private string Version;
-        private string TemplateName;
-        private string UpdatedBy;
-        private DateTime? UpdatedFrom;
-        private DateTime? UpdatedTo;
-
-        private readonly Dictionary<string, object> FilterValues = new();
-
-        private string SortBy = nameof(WorkboxItem.Updated);
-        private SortOrder SortOrder = SortOrder.Descending;
-        private SortOrder? DefaultSortOrder;
-
-        private IEnumerable<FacetItem> TemplateNames = Enumerable.Empty<FacetItem>();
-        private IEnumerable<KeyValuePair<string, string>> UpdatedByNames = Enumerable.Empty<KeyValuePair<string, string>>();
-        private IEnumerable<FacetItem> Languages = Enumerable.Empty<FacetItem>();
-
-        private RadzenPager Pager;
-        private bool IsLoading = true;
-
-
         protected override async Task OnInitializedAsync()
         {
-            this.PageSize = 10;
+            _pageSize = 10;
 
             await LoadWorkboxData();
         }
 
         private async Task OnPageChanged(PagerEventArgs args)
         {
-            PageIndex = args.PageIndex;
+            _pageIndex = args.PageIndex;
 
             await LoadWorkboxData();
         }
 
         private async Task OnPageSizeChanged(int pageSize)
         {
-            PageSize = pageSize;
+            _pageSize = pageSize;
 
             await LoadWorkboxData();
         }
 
         private async Task OnFilterChanged(object value)
         {
-            await Pager.FirstPage(true);
+            await _pager.FirstPage(true);
         }
 
         private async Task OnFilterChanged(DateTime? value)
         {
-            await Pager.FirstPage(true);
+            await _pager.FirstPage(true);
         }
 
         private async Task OnSort(DataGridColumnSortEventArgs<WorkboxItem> args)
         {
-            SortBy = args.Column.Property;
-            SortOrder = args.SortOrder ?? SortOrder.Ascending;
+            _sortBy = args.Column.Property;
+            _sortOrder = args.SortOrder ?? SortOrder.Ascending;
 
-            DefaultSortOrder = args.Column.Property == nameof(WorkboxItem.Updated) ? SortOrder : null;
+            _defaultSortOrder = args.Column.Property == nameof(WorkboxItem.Updated) ? _sortOrder : null;
 
-            await Pager.GoToPage(PageIndex, true);
+            await _pager.GoToPage(_pageIndex, true);
 
-            args.Column.SortOrder = SortOrder;
+            args.Column.SortOrder = _sortOrder;
         }
 
         private void UpdateFilters()
         {
-            FilterValues[nameof(TemplateName)] = TemplateName;
-            FilterValues[nameof(Path)] = Path;
-            FilterValues[nameof(Name)] = Name;
-            FilterValues[nameof(Version)] = Version;
-            FilterValues[nameof(Language)] = Language;
-            FilterValues[nameof(UpdatedBy)] = UpdatedBy;
-            FilterValues[nameof(UpdatedFrom)] = UpdatedFrom;
-            FilterValues[nameof(UpdatedTo)] = UpdatedTo;
+            _filterValues[nameof(WorkboxItem.Path)] = _path;
+            _filterValues[nameof(WorkboxItem.Language)] = _language;
+            _filterValues[nameof(WorkboxItem.Version)] = _version;
+            _filterValues[nameof(WorkboxItem.TemplateName)] = _templateName;
+            _filterValues[nameof(WorkboxItem.UpdatedBy)] = _updatedBy;
+            _filterValues[nameof(WorkboxItem.Updated)] = new DateTime?[] { _updatedFrom, _updatedTo };
         }
-
 
         private async Task LoadWorkboxData()
         {
-            IsLoading = true;
+            _isLoading = true;
             UpdateFilters();
 
-            GraphQLRequest request = WorkboxItemsSearchRequest.Create(WorkflowStateValue, PageSize, PageIndex, FilterValues, SortBy, SortOrder);
+            GraphQLRequest request = WorkboxItemsSearchRequest.Create(_stateID, _pageSize, _pageIndex, _filterValues, _sortBy, _sortOrder);
               GraphQLResponse<WorkboxItemsSearchResponse> result = await GraphQLClient.SendQueryAsync<WorkboxItemsSearchResponse>(request);
 
             if (result.Data == null)
@@ -116,8 +112,8 @@ namespace BlazorWorkbox.Components
                 return;
             }
 
-            TotalRecordCount = result.Data.Search.TotalCount;
-            Items = result.Data.Search.Results.Select(x => new WorkboxItem
+            _totalRecordCount = result.Data.Search.TotalCount;
+            _items = result.Data.Search.Results.Select(x => new WorkboxItem
             {
                 Path = x.Path,
                 Name = x.Name,
@@ -128,12 +124,12 @@ namespace BlazorWorkbox.Components
                 TemplateName = x.TemplateName
             });
 
-            TemplateNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_templatename")?.Facets.OrderBy(x => x.Name);
-            UpdatedByNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "parsedupdatedby")?.Facets.OrderBy(x => x.Name)
+            _templateNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_templatename")?.Facets.OrderBy(x => x.Name);
+            _updatedByNames = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "parsedupdatedby")?.Facets.OrderBy(x => x.Name)
                   .Select(x => new KeyValuePair<string, string>(x.Name, x.Name.Replace("sitecore", "sitecore/")));
-            Languages = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_language")?.Facets.OrderBy(x => x.Name);
+            _languages = result.Data.Search.Facets.FirstOrDefault(x => x.Name == "_language")?.Facets.OrderBy(x => x.Name);
 
-            IsLoading = false;
+            _isLoading = false;
         }
     }
 }

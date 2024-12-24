@@ -9,9 +9,9 @@ namespace BlazorWorkbox
     {
         public SitecoreAuthorizationMessageHandler(IOptions<AppSettings> appSettings, IAccessTokenProvider provider, NavigationManager navigation) : base(provider, navigation)
         {
-            ConfigureHandler(authorizedUrls: new[] {
+            ConfigureHandler(authorizedUrls: [
                 appSettings.Value.ContentManagementInstanceBaseUrl
-            });
+            ]);
         }
     }
 }
