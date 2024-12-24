@@ -5,7 +5,7 @@
 <div id="workflow-processing-dialog">
     @if (Items.Any())
     {
-        <RadzenDataGrid Data="@Items" IsLoading="@IsLoading" AllowPaging="true" PageSizeOptions="PageSizeOptions" PageSize="10" ShowPagingSummary="true">
+        <RadzenDataGrid Data="@Items" IsLoading="@_isLoading" AllowPaging="true" PageSizeOptions="_pageSizeOptions" PageSize="10" ShowPagingSummary="true">
             <Columns>
                 <RadzenDataGridColumn Width="50%" Property="@nameof(WorkboxItem.Path)" Title="Path" />
                 <RadzenDataGridColumn Width="80px" Property="@nameof(WorkboxItem.Language)" Title="Language" />
@@ -15,7 +15,7 @@
                 <RadzenDataGridColumn Width="110px" Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" />
                 <RadzenDataGridColumn Width="60px" Title="Result">
                     <Template Context="data">
-                        @if (CommandExecutionResults.TryGetValue(data.ItemUri, out var result))
+                        @if (_commandExecutionResults.TryGetValue(data.ItemUri, out var result))
                         {
                             <span title="@(result.Successful? "OK" : result.ErrorMessage)">
                                 <RadzenIcon Icon="@(result.Successful ? "check" : "error")" />
@@ -25,13 +25,13 @@
                 </RadzenDataGridColumn>
             </Columns>
         </RadzenDataGrid>
-        @if (ShowSubmit)
+        @if (_showSubmit)
         {
             <RadzenRow>
                 <RadzenColumn Size="12" class="rz-p-5">
                     <RadzenTemplateForm Submit="OnSubmit" TItem="WorkflowProcessingDialog" Data="this">
                         <RadzenLabel Component="Comments">Worflow comments:</RadzenLabel>
-                        <RadzenTextBox @bind-Value="Comments" Name="Comments" Placeholder="Enter Workflow comments" />
+                        <RadzenTextBox @bind-Value="_comments" Name="Comments" Placeholder="Enter Workflow comments" />
                         <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Secondary" Text="Process" />
                         <RadzenButton Text="Cancel" Click=@OnCancel ButtonStyle="ButtonStyle.Secondary" />
                     </RadzenTemplateForm>

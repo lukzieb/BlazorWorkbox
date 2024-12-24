@@ -6,7 +6,7 @@ namespace BlazorWorkbox.GraphQL.Requests
     public static class ExecuteWorkflowCommandRequest
     {
         [StringSyntax("GraphQL")]
-        private static readonly string Query = """
+        private const string Query = """
                 mutation ExecuteWorkflowCommand(
                   $commandId: String!
                   $itemId: String!
