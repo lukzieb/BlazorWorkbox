@@ -5,37 +5,37 @@
 <div id="workbox">
     <RadzenRow>
         <RadzenColumn Size="4" class="rz-p-4" id="selected-items">
-            <RadzenCheckBox Name="ShowSelectedItems" Value="@ShowOnlySelectedItems" Placeholder="Text" TriState="false" TValue="bool" Change="@OnShowSelectedItemsChanged" />
-            <RadzenLabel Component="ShowSelectedItems">Show only selected items (@StateDisplayName - @SelectedItemsCount items)</RadzenLabel>
+            <RadzenCheckBox Name="ShowSelectedItems" Value="@_showOnlySelectedItems" Placeholder="Text" TriState="false" TValue="bool" Change="@OnShowSelectedItemsChanged" />
+            <RadzenLabel Component="ShowSelectedItems">Show only selected items (@_stateDisplayName - @_selectedItemsCount items)</RadzenLabel>
         </RadzenColumn>
         <RadzenColumn Size="8" class="rz-text-align-right rz-p-5">
 
             <RadzenLabel Text="Workflow: " Component="Workflow" class="dropdown-label" />
-            <RadzenDropDown @bind-Value=@WorkflowValue Data=@WorkflowsData Name="Workflow" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowValueChanged />
+            <RadzenDropDown @bind-Value=@_workflowId Data=@_workflowsData Name="Workflow" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowValueChanged />
 
             <RadzenLabel Text="State: " Component="WorkflowState" class="dropdown-label" />
-            <RadzenDropDown @bind-Value=@WorkflowStateValue Data=@StateData Name="WorkflowState" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowStateChanged />
+            <RadzenDropDown @bind-Value=@_stateId Data=@_stateData Name="WorkflowState" ValueProperty="Key" TextProperty="Value" Change=@OnWorkflowStateChanged />
 
             <RadzenLabel Text="Action: " Component="Action" class="dropdown-label" />
-            <RadzenDropDown @ref="@CommandsDropDown" @bind-Value=@CommandValue Data=@CommandData Name="Action" ValueProperty="Key" TextProperty="Value" Placeholder="Select action" Change="@OnWorkflowCommandChanged" />
+            <RadzenDropDown @ref="@_commandsDropDown" @bind-Value=@_commandId Data=@_commandData Name="Action" ValueProperty="Key" TextProperty="Value" Placeholder="Select action" Change="@OnWorkflowCommandChanged" />
 
-            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@LoadWorkboxData" id="refresh-button" />
+            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="@LoadWorkboxData" Disabled="_showOnlySelectedItems" id="refresh-button" />
         </RadzenColumn>
     </RadzenRow>
 
-    <RadzenDataGrid Data="@Items" TItem="WorkboxItem" IsLoading="@IsLoading"
-                    FilterMode="FilterMode.Simple" AllowFiltering="@(!ShowOnlySelectedItems)" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                    Sort="@OnSort" AllowSorting="@(!ShowOnlySelectedItems)">
+    <RadzenDataGrid Data="@_items" TItem="WorkboxItem" IsLoading="@_isLoading"
+                    FilterMode="FilterMode.Simple" AllowFiltering="@(!_showOnlySelectedItems)" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Sort="@OnSort" AllowSorting="@(!_showOnlySelectedItems)">
 
         <Columns>
             <RadzenDataGridColumn TItem="WorkboxItem" Width="60px" Filterable="false" Title="Select" Sortable="false">
                 <HeaderTemplate>
-                    <RadzenCheckBox TriState="false" TValue="bool" Value="@(SelectedItems.Any() && Items.All(i => SelectedItems.Any(x=> x.ItemUri == i.ItemUri)))" Change="@OnSelectAllItemsChanged" />
+                    <RadzenCheckBox TriState="false" TValue="bool" Value="@(_items.Any() && _items.Where(x => x.IsUpToDate).All(i => _selectedItems.Any(x => x.ItemUri == i.ItemUri)))" Change="@OnSelectAllItemsChanged" />
                 </HeaderTemplate>
                 <Template Context="item">
                     @if (item.IsUpToDate)
                     {
-                        <RadzenCheckBox TriState="false" TValue="bool" Value="@(SelectedItems.Any(x => x.ItemUri == item.ItemUri))" Change="@(async selected => await OnSelectItemChanged(selected, item))" />
+                        <RadzenCheckBox TriState="false" TValue="bool" Value="@(_selectedItems.Any(x => x.ItemUri == item.ItemUri))" Change="@(async selected => await OnSelectItemChanged(selected, item))" />
                     }
                     else
                     {
@@ -47,46 +47,46 @@
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Path)" Title="Path" Width="40%">
                 <FilterTemplate>
-                    <RadzenTextBox @bind-Value=@Path Change="OnFilterChanged" />
+                    <RadzenTextBox @bind-Value=@_path Change="OnFilterChanged" />
                 </FilterTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Name)" Title="Name" Width="15%" Filterable="false" Sortable="false">
                 <FilterTemplate>
-                    <RadzenTextBox @bind-Value=@Name Change="OnFilterChanged" />
+                    <RadzenTextBox @bind-Value=@_name Change="OnFilterChanged" />
                 </FilterTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Language)" Title="Language" Width="110px">
                 <FilterTemplate>
-                    <RadzenDropDown @bind-Value=@Language Data=@Languages TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
+                    <RadzenDropDown @bind-Value=@_language Data=@_languages TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
                 </FilterTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.Version)" Title="Version" Width="90px">
                 <FilterTemplate>
-                    <RadzenTextBox @bind-Value=@Version Change="OnFilterChanged" />
+                    <RadzenTextBox @bind-Value=@_version Change="OnFilterChanged" />
                 </FilterTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.TemplateName)" Title="Template Name" Width="190px">
                 <FilterTemplate>
-                    <RadzenDropDown @bind-Value=@TemplateName Data=@TemplateNames TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
+                    <RadzenDropDown @bind-Value=@_templateName Data=@_templateNames TextProperty="Name" ValueProperty="Name" Change="OnFilterChanged" AllowClear />
                 </FilterTemplate>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn Property="@nameof(WorkboxItem.Updated)" Title="Updated" Width="210px" SortOrder="DefaultSortOrder">
+            <RadzenDataGridColumn Property="@nameof(WorkboxItem.Updated)" Title="Updated" Width="210px" SortOrder="_defaultSortOrder">
                 <FilterTemplate>
                     <RadzenLabel Component="from" Text="From" class="datepicker-label" />
-                    <RadzenDatePicker title="@UpdatedFrom" Name="from" @bind-Value=@UpdatedFrom Change="OnFilterChanged" AllowClear />
+                    <RadzenDatePicker title="@_updatedFrom" Name="from" @bind-Value=@_updatedFrom Change="OnFilterChanged" AllowClear />
                     <RadzenLabel Component="to" Text="To" class="datepicker-label" />
-                    <RadzenDatePicker title="@UpdatedTo" Name="to" @bind-Value=@UpdatedTo Change="OnFilterChanged" AllowClear />
+                    <RadzenDatePicker title="@_updatedTo" Name="to" @bind-Value=@_updatedTo Change="OnFilterChanged" AllowClear />
                 </FilterTemplate>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Property="@nameof(WorkboxItem.UpdatedBy)" Title="Updated By" Width="160px">
                 <FilterTemplate>
-                    <RadzenDropDown @bind-Value=@UpdatedBy Data=@UpdatedByNames TextProperty="Value" ValueProperty="Key" Change=@OnFilterChanged AllowClear />
+                    <RadzenDropDown @bind-Value=@_updatedBy Data=@_updatedByNames TextProperty="Value" ValueProperty="Key" Change=@OnFilterChanged AllowClear />
                 </FilterTemplate>
             </RadzenDataGridColumn>
         </Columns>
     </RadzenDataGrid>
 
-    <RadzenPager @ref=Pager Count="@TotalRecordCount" PageSize="@PageSize" PageSizeOptions="@PageSizeOptions"
+    <RadzenPager @ref=_pager Count="@_totalRecordCount" PageSize="@_pageSize" PageSizeOptions="@_pageSizeOptions"
                  ShowPagingSummary PagingSummaryFormat="Displaying page {0} of {1} (total {2} records)."
                  PageChanged="@OnPageChanged" PageSizeChanged="@OnPageSizeChanged" />
 </div>

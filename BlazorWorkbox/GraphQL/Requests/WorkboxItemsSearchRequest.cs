@@ -11,7 +11,7 @@ namespace BlazorWorkbox.GraphQL.Requests
         private const string SolrDateFormat = "yyyy-MM-ddTHH:mm:ssZ";
 
         [StringSyntax("GraphQL")]
-        private static readonly string Query = """
+        private const string Query = """
          query WorkboxItems($workflowState: String!, $pageSize: Int!, $pageIndex: Int!, $fullPath: String!, $name: String!, $version: String!, $language: String!, $templateName: String!, $updatedBy: String!, $updated: String!, $orderBy: String!, $orderingDirection: String!)  {
            search(
              query: {
@@ -75,7 +75,7 @@ namespace BlazorWorkbox.GraphQL.Requests
          """;
 
 
-        private static readonly Dictionary<string, string> OrderingMapping = new()
+        private static readonly Dictionary<string, string> s_orderingMapping = new()
      {
          { nameof(WorkboxItem.Path), "_fullpath" },
          { nameof(WorkboxItem.Name), "_name" },
@@ -94,11 +94,12 @@ namespace BlazorWorkbox.GraphQL.Requests
             string templateName = GetFilterStringValue(nameof(WorkboxItem.TemplateName), filters);
             string updatedBy = GetFilterStringValue(nameof(WorkboxItem.UpdatedBy), filters);
 
-            DateTime updatedFrom = filters.GetValueOrDefault("UpdatedFrom") as DateTime? ?? DateTime.MinValue;
-            DateTime updatedTo = filters.GetValueOrDefault("UpdatedTo") as DateTime? ?? DateTime.MaxValue;
+            DateTime?[] updatedRange = filters.GetValueOrDefault(nameof(WorkboxItem.Updated)) as DateTime?[];
+            DateTime updatedFrom = updatedRange?[0] ?? DateTime.MinValue;
+            DateTime updatedTo = updatedRange?[1] ?? DateTime.MaxValue;
             string updated = $"[{updatedFrom.ToString(SolrDateFormat)} TO {updatedTo.ToString(SolrDateFormat)}]";
 
-            string orderBy = OrderingMapping.GetValueOrDefault(orderingProperty ?? nameof(WorkboxItem.UpdatedBy)) ?? "parsedupdatedby_s";
+            string orderBy = s_orderingMapping.GetValueOrDefault(orderingProperty ?? nameof(WorkboxItem.UpdatedBy)) ?? "parsedupdatedby_s";
             string orderingDirection = sortOrder == SortOrder.Descending ? "DESCENDING" : "ASCENDING";
 
             return new GraphQLRequest()
@@ -125,7 +126,7 @@ namespace BlazorWorkbox.GraphQL.Requests
 
         private static string GetFilterStringValue(string key, Dictionary<string, object> filters, Func<string, string> transormQuery = null)
         {
-            string? value = filters.GetValueOrDefault(key) as string;
+            string value = filters.GetValueOrDefault(key) as string;
 
             if (string.IsNullOrEmpty(value))
             {

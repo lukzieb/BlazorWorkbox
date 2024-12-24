@@ -13,7 +13,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-AppSettings appSettings = new AppSettings();
+AppSettings appSettings = new();
 builder.Configuration.GetSection("AppSettings").Bind(appSettings);
 
 builder.Services.AddOidcAuthentication(options =>
@@ -33,7 +33,7 @@ builder.Services.Configure<AppSettings>(x => builder.Configuration.GetSection("A
 
 builder.Services.AddHttpClient<IGraphQLClient, GraphQLHttpClient>(x =>
 {
-    GraphQLHttpClientOptions graphQLHttpClientOptions = new GraphQLHttpClientOptions()
+    GraphQLHttpClientOptions graphQLHttpClientOptions = new()
     {
         EndPoint = new Uri($"{appSettings.ContentManagementInstanceBaseUrl}/sitecore/api/authoring/graphql/v1")
     };
